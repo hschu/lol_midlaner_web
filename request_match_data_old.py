@@ -1,10 +1,6 @@
-from flask import Flask, request, render_template
 import requests
 import pandas as pd
 import numpy as np
-
-# Flask 앱 생성
-app = Flask(__name__)
 
 # Riot API 키 입력
 API_KEY = "RGAPI-386cd3ac-a127-4203-aadc-678f4c384306"
@@ -341,38 +337,38 @@ def compute_score(data):
     }
     return scores
 
+def main():
+    # Riot ID 입력
+    # gamer_name = input("Riot ID의 게임 이름 (gameName)을 입력하세요: ")
+    # tag_line = input("Riot ID의 태그 (tagLine)를 입력하세요: ")
+    gamer_name = "Hide on bush"
+    tag_line = "KR1"
+    try:
+        # Riot ID로 PUUID 가져오기
+        puuid = get_puuid_by_riot_id(gamer_name, tag_line)
+        print(f"PUUID: {puuid}")
 
-# 라우트: 메인 페이지
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        try:
-            # 입력값 가져오기
-            game_name = request.form["game_name"]
-            tag_line = request.form["tag_line"]
+        # PUUID로 최근 매치 ID 가져오기
+        recent_matches = get_recent_matches(puuid, 20)
+        print(f"최근 5개 매치 ID: {recent_matches}")
 
-            # Riot ID로 PUUID 가져오기
-            puuid = get_puuid_by_riot_id(game_name, tag_line)
+        for recent_match in recent_matches:
+            match, timeline = match_timeline_info(recent_match)
+            isTarget = check_target(match, gamer_name)
+            if isTarget['isMid'] and isTarget['isOver20m']:
+                # print(f"Gamer: {gamer_name}#{tag_line}, matchId: {recent_match}, isMid: {isTarget['isMid']}, isOver20m: {isTarget['isOver20m']}")
+                # print(f"teamid: {isTarget['teamid']}, oteamid: {isTarget['oteamid']}")
+                gamer_data = get_gamer_data(match, timeline, isTarget['teamid'])
+                opponent_data = get_gamer_data(match, timeline, isTarget['oteamid'])
+                merged_data = merge_data(gamer_data, opponent_data)
+                #print(merged_data)
+                scores = compute_score(merged_data)
+                print(scores, gamer_data['win'])
 
-            # PUUID로 최근 매치 가져오기
-            recent_matches = get_recent_matches(puuid, count=5)
-            results = []
-            for recent_match in recent_matches:
-                match, timeline = match_timeline_info(recent_match)
-                isTarget = check_target(match, game_name)
-                if isTarget['isMid'] and isTarget['isOver20m']:
-                    # print(f"Gamer: {gamer_name}#{tag_line}, matchId: {recent_match}, isMid: {isTarget['isMid']}, isOver20m: {isTarget['isOver20m']}")
-                    # print(f"teamid: {isTarget['teamid']}, oteamid: {isTarget['oteamid']}")
-                    gamer_data = get_gamer_data(match, timeline, isTarget['teamid'])
-                    opponent_data = get_gamer_data(match, timeline, isTarget['oteamid'])
-                    merged_data = merge_data(gamer_data, opponent_data)
-                    scores = compute_score(merged_data)
-                    results.append(scores)
-            return render_template("result.html", game_name=game_name, tag_line=tag_line, results=results)
-        except Exception as e:
-            return render_template("index.html", error=str(e))
-    return render_template("index.html")
 
-# Flask 앱 실행
+    except Exception as e:
+        print(e)
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    main()

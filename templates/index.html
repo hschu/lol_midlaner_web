@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL Match Data</title>
+</head>
+<body>
+    <h1>LoL Match Data</h1>
+    <form method="POST" action="/">
+        <label for="game_name">소환사명:</label>
+        <input type="text" id="game_name" name="game_name" required><br><br>
+        <label for="tag_line">태그라인:</label>
+        <input type="text" id="tag_line" name="tag_line" required><br><br>
+        <button type="submit">조회</button>
+    </form>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+</body>
+</html>
