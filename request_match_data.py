@@ -1,11 +1,32 @@
 import requests
 import pandas as pd
+import numpy as np
 # Riot API 키 입력
-API_KEY = "RGAPI-6091d029-ca97-4de9-abbe-240f68c392f9"
+API_KEY = "RGAPI-386cd3ac-a127-4203-aadc-678f4c384306"
 
 # Riot API 헤더
 HEADERS = {"X-Riot-Token": API_KEY}
 
+parameter = pd.read_json("./parameters.json")
+
+normalize_parameter = {
+    "af14combatscore" : [-3.233195355409694, 3.516596413521268],
+    "af14managescore" : [-4.542339666904909, 5.624995815720527],
+    "af14diffscore" :   [-4.729157179754498, 4.102997024016695],
+    "af14totalscore"  : [-3.407761520729901, 3.8728473615099612]
+}
+
+total_parameters = {
+    "std" :    [1.23078432, 1.27640612, 1.16705394],
+    "weight" : [0.44091245, 0.36296359, 0.46178546]
+}
+
+average_score = {
+    "combat" : 47.90066814048947,
+    "manage" : 44.67581181586009,
+    "diff"   : 53.54477594758504,
+    "total"  : 46.8059962545538
+}
 
 def get_puuid_by_riot_id(game_name, tag_line):
     """Riot ID를 사용해 PUUID를 가져옴"""
@@ -15,7 +36,6 @@ def get_puuid_by_riot_id(game_name, tag_line):
         return response.json()["puuid"]
     else:
         raise Exception(f"Error: {response.status_code}, {response.json()}")
-
 
 def get_recent_matches(puuid, count=5):
     """PUUID를 사용해 최근 매치 ID 리스트를 가져옴"""
@@ -197,64 +217,124 @@ def get_gamer_data(match, timeline, pid):
 
 def merge_data(target, opponent):
     match_data = {}
+    match_data['win'] = target['win']
+    at14killsRatio =0
+    if not (target['at14']['kills'] == 0 and opponent['at14']['kills'] == 0):
+        at14killsRatio = target['at14']['kills'] / (target['at14']['kills'] + opponent['at14']['kills'])
 
-    combat_kills =0
-    if not (target['kills'] == 0 and opponent['kills'] == 0):
-        combat_kills = target['kills'] / (target['kills'] + opponent['kills'])
-    combat_deaths = 0
-    if not (target['deaths'] == 0 and opponent['deaths'] == 0):
-        combat_deaths = target['deaths'] / (target['deaths'] + opponent['deaths'])
-    combat_assists = 0
-    if not (target['assists'] == 0 and opponent['assists'] == 0):
-        combat_assists = target['assists'] / (target['assists'] + opponent['assists'])
+    at14deathsRatio = 0
+    if not (target['at14']['deaths'] == 0 and opponent['at14']['deaths'] == 0):
+        at14deathsRatio = target['at14']['deaths'] / (target['at14']['deaths'] + opponent['at14']['deaths'])
+
+    at14assistsRatio = 0
+    if not (target['at14']['assists'] == 0 and opponent['at14']['assists'] == 0):
+        at14assistsRatio = target['at14']['assists'] / (target['at14']['assists'] + opponent['at14']['assists'])
+
+    at14solokillsRatio = 0
+    if not (target['at14']['solokills'] == 0 and opponent['at14']['solokills'] == 0):
+        at14solokillsRatio = target['at14']['solokills'] / (target['at14']['solokills'] + opponent['at14']['solokills'])
+
+    at14solodeathsRatio = 0
+    if not (target['at14']['solodeaths'] == 0 and opponent['at14']['solodeaths'] == 0):
+        at14solodeathsRatio = target['at14']['solodeaths'] / (target['at14']['solodeaths'] + opponent['at14']['solodeaths'])
+
     # at14
-    match_data['at14killsRatio']      = target['at14']['combat']['killsRatio']
-    match_data['at14deathsRatio']     = match['at14']['combat']['deathsRatio']
-    match_data['at14assistsRatio']    = match['at14']['combat']['assistsRatio']
-    match_data['at14solokillsRatio']  = match['at14']['combat']['solokillsRatio']
-    match_data['at14solodeathsRatio'] = match['at14']['combat']['solodeathsRatio']
-    match_data['at14dpm']             = match['at14']['combat']['dpm']
-    match_data['at14dtpm']            = match['at14']['combat']['dtpm']
-    match_data['at14mpm']             = match['at14']['manage']['mpm']
-    match_data['at14cspm']            = match['at14']['manage']['cspm']
-    match_data['at14gpm']             = match['at14']['manage']['gpm']
-    match_data['at14xpm']             = match['at14']['manage']['xpm']
-    match_data['at14dpd']             = match['at14']['manage']['dpd']
-    match_data['at14dpg']             = match['at14']['manage']['dpg']
-    match_data['at14mpm']             = match['at14']['diff']['mpm']
-    match_data['at14dpmdiff']         = match['at14']['diff']['dpm']
-    match_data['at14dtpmdiff']        = match['at14']['diff']['dtpm']
-    match_data['at14cspmdiff']        = match['at14']['diff']['cspm']
-    match_data['at14gpmdiff']         = match['at14']['diff']['gpm']
-    match_data['at14xpmdiff']         = match['at14']['diff']['xpm']
-    match_data['at14dpddiff']         = match['at14']['diff']['dpd']
-    match_data['at14dpgdiff']         = match['at14']['diff']['dpg']
+    match_data['at14killsRatio']      = at14killsRatio
+    match_data['at14deathsRatio']     = at14deathsRatio
+    match_data['at14assistsRatio']    = at14assistsRatio
+    match_data['at14solokillsRatio']  = at14solokillsRatio
+    match_data['at14solodeathsRatio'] = at14solodeathsRatio
+    match_data['at14dpm']             = target['at14']['dpm']
+    match_data['at14dtpm']            = target['at14']['dtpm']
+    match_data['at14cspm']            = target['at14']['cspm']
+    match_data['at14gpm']             = target['at14']['gpm']
+    match_data['at14xpm']             = target['at14']['xpm']
+    match_data['at14dpd']             = target['at14']['dpd']
+    match_data['at14dpg']             = target['at14']['dpg']
+    match_data['at14dpmdiff']         = target['at14']['dpm'] - opponent['at14']['dpm']
+    match_data['at14dtpmdiff']        = target['at14']['dtpm'] - opponent['at14']['dtpm']
+    match_data['at14cspmdiff']        = target['at14']['cspm'] - opponent['at14']['cspm']
+    match_data['at14gpmdiff']         = target['at14']['gpm'] - opponent['at14']['gpm']
+    match_data['at14xpmdiff']         = target['at14']['xpm'] - opponent['at14']['xpm']
+    match_data['at14dpddiff']         = target['at14']['dpd'] - opponent['at14']['dpd']
+    match_data['at14dpgdiff']         = target['at14']['dpg'] - opponent['at14']['dpg']
+
+    af14killsRatio = 0
+    if not (target['af14']['kills'] == 0 and opponent['af14']['kills'] == 0):
+        af14killsRatio = target['af14']['kills'] / (target['af14']['kills'] + opponent['af14']['kills'])
+
+    af14deathsRatio = 0
+    if not (target['af14']['deaths'] == 0 and opponent['af14']['deaths'] == 0):
+        af14deathsRatio = target['af14']['deaths'] / (target['af14']['deaths'] + opponent['af14']['deaths'])
+
+    af14assistsRatio = 0
+    if not (target['af14']['assists'] == 0 and opponent['af14']['assists'] == 0):
+        af14assistsRatio = target['af14']['assists'] / (target['af14']['assists'] + opponent['af14']['assists'])
+
+    af14solokillsRatio = 0
+    if not (target['af14']['solokills'] == 0 and opponent['af14']['solokills'] == 0):
+        af14solokillsRatio = target['af14']['solokills'] / (target['af14']['solokills'] + opponent['af14']['solokills'])
+
+    af14solodeathsRatio = 0
+    if not (target['af14']['solodeaths'] == 0 and opponent['af14']['solodeaths'] == 0):
+        af14solodeathsRatio = target['af14']['solodeaths'] / (target['af14']['solodeaths'] + opponent['af14']['solodeaths'])
 
     # af14
-    match_data['af14killsRatio']      = match['af14']['combat']['killsRatio']
-    match_data['af14deathsRatio']     = match['af14']['combat']['deathsRatio']
-    match_data['af14assistsRatio']    = match['af14']['combat']['assistsRatio']
-    match_data['af14solokillsRatio']  = match['af14']['combat']['solokillsRatio']
-    match_data['af14solodeathsRatio'] = match['af14']['combat']['solodeathsRatio']
-    match_data['af14dpm']             = match['af14']['combat']['dpm']
-    match_data['af14dtpm']            = match['af14']['combat']['dtpm']
-    match_data['af14mpm']             = match['af14']['manage']['mpm']
-    match_data['af14cspm']            = match['af14']['manage']['cspm']
-    match_data['af14gpm']             = match['af14']['manage']['gpm']
-    match_data['af14xpm']             = match['af14']['manage']['xpm']
-    match_data['af14dpd']             = match['af14']['manage']['dpd']
-    match_data['af14dpg']             = match['af14']['manage']['dpg']
-    match_data['af14mpm']             = match['af14']['diff']['mpm']
-    match_data['af14dpmdiff']         = match['af14']['diff']['dpm']
-    match_data['af14dtpmdiff']        = match['af14']['diff']['dtpm']
-    match_data['af14cspmdiff']        = match['af14']['diff']['cspm']
-    match_data['af14gpmdiff']         = match['af14']['diff']['gpm']
-    match_data['af14xpmdiff']         = match['af14']['diff']['xpm']
-    match_data['af14dpddiff']         = match['af14']['diff']['dpd']
-    match_data['af14dpgdiff']         = match['af14']['diff']['dpg']
+    match_data['af14killsRatio']      = af14killsRatio
+    match_data['af14deathsRatio']     = af14deathsRatio
+    match_data['af14assistsRatio']    = af14assistsRatio
+    match_data['af14solokillsRatio']  = af14solokillsRatio
+    match_data['af14solodeathsRatio'] = af14solodeathsRatio
+    match_data['af14dpm']             = target['af14']['dpm']
+    match_data['af14dtpm']            = target['af14']['dtpm']
+    match_data['af14cspm']            = target['af14']['cspm']
+    match_data['af14gpm']             = target['af14']['gpm']
+    match_data['af14xpm']             = target['af14']['xpm']
+    match_data['af14dpd']             = target['af14']['dpd']
+    match_data['af14dpg']             = target['af14']['dpg']
+    match_data['af14dpmdiff']         = target['af14']['dpm'] - opponent['af14']['dpm']
+    match_data['af14dtpmdiff']        = target['af14']['dtpm'] - opponent['af14']['dtpm']
+    match_data['af14cspmdiff']        = target['af14']['cspm'] - opponent['af14']['cspm']
+    match_data['af14gpmdiff']         = target['af14']['gpm'] - opponent['af14']['gpm']
+    match_data['af14xpmdiff']         = target['af14']['xpm'] - opponent['af14']['xpm']
+    match_data['af14dpddiff']         = target['af14']['dpd'] - opponent['af14']['dpd']
+    match_data['af14dpgdiff']         = target['af14']['dpg'] - opponent['af14']['dpg']
 
     return match_data
 
+def compute_score(data):
+    # combat
+    combat_score = 0
+    af14combat = ['af14killsRatio', 'af14deathsRatio', 'af14assistsRatio', 'af14solokillsRatio', 'af14solodeathsRatio', 'af14dpm', 'af14dtpm']
+    for c in af14combat:
+        combat_score += parameter['weight'][0][c] * (data[c] - parameter['mean'][0][c]) / parameter['std'][0][c]
+    norm_combat_score = (combat_score - normalize_parameter['af14combatscore'][0]) / (normalize_parameter['af14combatscore'][1] - normalize_parameter['af14combatscore'][0]) * 100
+
+    # manage
+    manage_score = 0
+    af14manage = ['af14cspm', 'af14gpm', 'af14xpm', 'af14dpd', 'af14dpg']
+    for c in af14manage:
+        manage_score += parameter['weight'][0][c] * (data[c] - parameter['mean'][0][c]) / parameter['std'][0][c]
+    norm_manage_score = (manage_score - normalize_parameter['af14managescore'][0]) / (normalize_parameter['af14managescore'][1] - normalize_parameter['af14managescore'][0]) * 100
+
+    # diff
+    diff_score = 0
+    af14diff = ['af14dpmdiff', 'af14dtpmdiff', 'af14cspmdiff', 'af14gpmdiff', 'af14xpmdiff', 'af14dpddiff', 'af14dpgdiff']
+    for c in af14diff:
+        diff_score += parameter['weight'][0][c] * (data[c] - parameter['mean'][0][c]) / parameter['std'][0][c]
+    norm_diff_score = (diff_score - normalize_parameter['af14diffscore'][0]) / (normalize_parameter['af14diffscore'][1] - normalize_parameter['af14diffscore'][0]) * 100
+
+    total_score = total_parameters['weight'][0] / total_parameters['std'][0] * combat_score + \
+                  total_parameters['weight'][1] / total_parameters['std'][1] * manage_score + \
+                  total_parameters['weight'][2] / total_parameters['std'][2] * diff_score
+    norm_total_score = (total_score - normalize_parameter['af14totalscore'][0]) / (normalize_parameter['af14totalscore'][1] - normalize_parameter['af14totalscore'][0]) * 100
+    scores = {
+        "combat" : norm_combat_score,
+        "manage" : norm_manage_score,
+        "diff"   : norm_diff_score,
+        "total"  : norm_total_score
+    }
+    return scores
 
 def main():
     # Riot ID 입력
@@ -268,7 +348,7 @@ def main():
         print(f"PUUID: {puuid}")
 
         # PUUID로 최근 매치 ID 가져오기
-        recent_matches = get_recent_matches(puuid)
+        recent_matches = get_recent_matches(puuid, 20)
         print(f"최근 5개 매치 ID: {recent_matches}")
 
         for recent_match in recent_matches:
@@ -280,6 +360,10 @@ def main():
                 gamer_data = get_gamer_data(match, timeline, isTarget['teamid'])
                 opponent_data = get_gamer_data(match, timeline, isTarget['oteamid'])
                 merged_data = merge_data(gamer_data, opponent_data)
+                #print(merged_data)
+                scores = compute_score(merged_data)
+                print(scores, gamer_data['win'])
+
 
     except Exception as e:
         print(e)
