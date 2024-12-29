@@ -195,6 +195,67 @@ def get_gamer_data(match, timeline, pid):
 
     return target_data
 
+def merge_data(target, opponent):
+    match_data = {}
+
+    combat_kills =0
+    if not (target['kills'] == 0 and opponent['kills'] == 0):
+        combat_kills = target['kills'] / (target['kills'] + opponent['kills'])
+    combat_deaths = 0
+    if not (target['deaths'] == 0 and opponent['deaths'] == 0):
+        combat_deaths = target['deaths'] / (target['deaths'] + opponent['deaths'])
+    combat_assists = 0
+    if not (target['assists'] == 0 and opponent['assists'] == 0):
+        combat_assists = target['assists'] / (target['assists'] + opponent['assists'])
+    # at14
+    match_data['at14killsRatio']      = target['at14']['combat']['killsRatio']
+    match_data['at14deathsRatio']     = match['at14']['combat']['deathsRatio']
+    match_data['at14assistsRatio']    = match['at14']['combat']['assistsRatio']
+    match_data['at14solokillsRatio']  = match['at14']['combat']['solokillsRatio']
+    match_data['at14solodeathsRatio'] = match['at14']['combat']['solodeathsRatio']
+    match_data['at14dpm']             = match['at14']['combat']['dpm']
+    match_data['at14dtpm']            = match['at14']['combat']['dtpm']
+    match_data['at14mpm']             = match['at14']['manage']['mpm']
+    match_data['at14cspm']            = match['at14']['manage']['cspm']
+    match_data['at14gpm']             = match['at14']['manage']['gpm']
+    match_data['at14xpm']             = match['at14']['manage']['xpm']
+    match_data['at14dpd']             = match['at14']['manage']['dpd']
+    match_data['at14dpg']             = match['at14']['manage']['dpg']
+    match_data['at14mpm']             = match['at14']['diff']['mpm']
+    match_data['at14dpmdiff']         = match['at14']['diff']['dpm']
+    match_data['at14dtpmdiff']        = match['at14']['diff']['dtpm']
+    match_data['at14cspmdiff']        = match['at14']['diff']['cspm']
+    match_data['at14gpmdiff']         = match['at14']['diff']['gpm']
+    match_data['at14xpmdiff']         = match['at14']['diff']['xpm']
+    match_data['at14dpddiff']         = match['at14']['diff']['dpd']
+    match_data['at14dpgdiff']         = match['at14']['diff']['dpg']
+
+    # af14
+    match_data['af14killsRatio']      = match['af14']['combat']['killsRatio']
+    match_data['af14deathsRatio']     = match['af14']['combat']['deathsRatio']
+    match_data['af14assistsRatio']    = match['af14']['combat']['assistsRatio']
+    match_data['af14solokillsRatio']  = match['af14']['combat']['solokillsRatio']
+    match_data['af14solodeathsRatio'] = match['af14']['combat']['solodeathsRatio']
+    match_data['af14dpm']             = match['af14']['combat']['dpm']
+    match_data['af14dtpm']            = match['af14']['combat']['dtpm']
+    match_data['af14mpm']             = match['af14']['manage']['mpm']
+    match_data['af14cspm']            = match['af14']['manage']['cspm']
+    match_data['af14gpm']             = match['af14']['manage']['gpm']
+    match_data['af14xpm']             = match['af14']['manage']['xpm']
+    match_data['af14dpd']             = match['af14']['manage']['dpd']
+    match_data['af14dpg']             = match['af14']['manage']['dpg']
+    match_data['af14mpm']             = match['af14']['diff']['mpm']
+    match_data['af14dpmdiff']         = match['af14']['diff']['dpm']
+    match_data['af14dtpmdiff']        = match['af14']['diff']['dtpm']
+    match_data['af14cspmdiff']        = match['af14']['diff']['cspm']
+    match_data['af14gpmdiff']         = match['af14']['diff']['gpm']
+    match_data['af14xpmdiff']         = match['af14']['diff']['xpm']
+    match_data['af14dpddiff']         = match['af14']['diff']['dpd']
+    match_data['af14dpgdiff']         = match['af14']['diff']['dpg']
+
+    return match_data
+
+
 def main():
     # Riot ID 입력
     # gamer_name = input("Riot ID의 게임 이름 (gameName)을 입력하세요: ")
@@ -218,8 +279,7 @@ def main():
                 # print(f"teamid: {isTarget['teamid']}, oteamid: {isTarget['oteamid']}")
                 gamer_data = get_gamer_data(match, timeline, isTarget['teamid'])
                 opponent_data = get_gamer_data(match, timeline, isTarget['oteamid'])
-                print(gamer_data)
-                print(opponent_data)
+                merged_data = merge_data(gamer_data, opponent_data)
 
     except Exception as e:
         print(e)
