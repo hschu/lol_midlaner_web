@@ -4,14 +4,125 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Match Results</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Match Results for {{ game_name }}#{{ tag_line }}</h1>
-    <ul>
-        {% for result in results %}
-            <li>Combat: {{ result.combat }}, Manage: {{ result.manage }}, Diff: {{ result.diff }}, Total: {{ result.total }}</li>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Match Results for {{ game_name }}#{{ tag_line }}</h1>
+
+        <!-- 모든 매치 결과 반복 출력 -->
+        {% for match in results %}
+        <div class="row mb-5">
+            <!-- 왼편: 매치 정보 및 실력 지표 -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Match Information</h5>
+                        <p class="card-text"><strong>Match ID:</strong> {{ match['matchId'] }}</p>
+                        <p class="card-text">
+                            <strong>Result:</strong>
+                            <span style="color: {{ 'blue' if match['win'] else 'red' }}">
+                                {{ "승리" if match['win'] else "패배" }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h4>실력 지표 (Total Score)</h4>
+                        <p class="display-4" id="totalScore-{{ loop.index0 }}">{{ "%.2f" | format(match['total']) }}</p>
+                        <p>평균 점수: {{ "%.2f" | format(average_score.total) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른편: 스파이더 맵 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="text-center">지표 시각화</h4>
+                        <canvas id="spiderChart-{{ loop.index0 }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
         {% endfor %}
-    </ul>
-    <a href="/">다시 조회하기</a>
+
+        <a href="/" class="btn btn-secondary mt-4 w-100">다시 조회하기</a>
+    </div>
+
+    <!-- 스파이더 맵 스크립트 -->
+    <script>
+        const results = {{ results | tojson }};
+        const averageData = [ // 평균값
+            {{ "%.2f" | format(average_score.combat) }},
+            {{ "%.2f" | format(average_score.manage) }},
+            {{ "%.2f" | format(average_score.diff) }}
+        ];
+
+        results.forEach((match, index) => {
+            const labels = ["전투", "운영", "격차"];
+            const resultData = [
+                match['combat'],
+                match['manage'],
+                match['diff']
+            ];
+
+            const data = {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "사용자 점수",
+                        data: resultData,
+                        backgroundColor: "rgba(54, 162, 235, 0.2)",
+                        borderColor: "rgba(54, 162, 235, 1)",
+                        borderWidth: 1,
+                    },
+                    {
+                        label: "평균 점수",
+                        data: averageData,
+                        backgroundColor: "rgba(255, 99, 132, 0.2)",
+                        borderColor: "rgba(255, 99, 132, 1)",
+                        borderWidth: 1,
+                    },
+                ]
+            };
+
+            const config = {
+                type: "radar",
+                data: data,
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            min: 0, // 최소값 설정
+                            max: 100, // 최대값 설정
+                            ticks: {
+                                stepSize: 20, // 간격 설정
+                            },
+                        },
+                    },
+                },
+            };
+
+            const ctx = document.getElementById(`spiderChart-${index}`).getContext("2d");
+            new Chart(ctx, config);
+
+            // 실력 지표 색상 변경
+            const totalScoreElement = document.getElementById(`totalScore-${index}`);
+            const totalScore = parseFloat(match['total']);
+            const averageTotalScore = {{ "%.2f" | format(average_score.total) }};
+            if (totalScore > averageTotalScore) {
+                totalScoreElement.style.color = "blue"; // 잘했으면 파란색
+            } else {
+                totalScoreElement.style.color = "red"; // 못했으면 빨간색
+            }
+        });
+    </script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

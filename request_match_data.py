@@ -7,10 +7,10 @@ import numpy as np
 app = Flask(__name__)
 
 # Riot API 키 입력
-API_KEY = "RGAPI-386cd3ac-a127-4203-aadc-678f4c384306"
+# API_KEY = "RGAPI-386cd3ac-a127-4203-aadc-678f4c384306"
 
 # Riot API 헤더
-HEADERS = {"X-Riot-Token": API_KEY}
+# HEADERS = {"X-Riot-Token": API_KEY}
 
 parameter = pd.read_json("./parameters.json")
 
@@ -33,32 +33,32 @@ average_score = {
     "total"  : 46.8059962545538
 }
 
-def get_puuid_by_riot_id(game_name, tag_line):
+def get_puuid_by_riot_id(game_name, tag_line, headers):
     """Riot ID를 사용해 PUUID를 가져옴"""
     url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
-    response = requests.get(url, headers=HEADERS)
+    response = requests.get(url, headers=headers)
     if response.status_code == 200:
         return response.json()["puuid"]
     else:
         raise Exception(f"Error: {response.status_code}, {response.json()}")
 
-def get_recent_matches(puuid, count=5):
+def get_recent_matches(puuid, headers, count=5):
     """PUUID를 사용해 최근 매치 ID 리스트를 가져옴"""
     url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids"
     params = {"start": 0, "count": count}
-    response = requests.get(url, headers=HEADERS, params=params)
+    response = requests.get(url, headers=headers, params=params)
     if response.status_code == 200:
         return response.json()
     else:
         raise Exception(f"Error: {response.status_code}, {response.json()}")
 
-def match_timeline_info(matchId):
+def match_timeline_info(matchId, headers):
     url_match =f"https://asia.api.riotgames.com/lol/match/v5/matches/{matchId}"
-    response_match = requests.get(url_match, headers=HEADERS)
+    response_match = requests.get(url_match, headers=headers)
     raw_match = response_match.json()
 
     url_timeline = f"https://asia.api.riotgames.com/lol/match/v5/matches/{matchId}/timeline"
-    response_timeline = requests.get(url_timeline, headers=HEADERS)
+    response_timeline = requests.get(url_timeline, headers=headers)
     raw_timeline = response_timeline.json()
 
     if (response_match.status_code == 200) and (response_timeline.status_code == 200):
@@ -337,7 +337,8 @@ def compute_score(data):
         "combat" : norm_combat_score,
         "manage" : norm_manage_score,
         "diff"   : norm_diff_score,
-        "total"  : norm_total_score
+        "total"  : norm_total_score,
+        "win" : data['win']
     }
     return scores
 
@@ -348,17 +349,21 @@ def index():
     if request.method == "POST":
         try:
             # 입력값 가져오기
+            riot_api_key = request.form["riot_api_key"]
             game_name = request.form["game_name"]
             tag_line = request.form["tag_line"]
 
+            headers = {"X-Riot-Token": riot_api_key}
+
             # Riot ID로 PUUID 가져오기
-            puuid = get_puuid_by_riot_id(game_name, tag_line)
+            puuid = get_puuid_by_riot_id(game_name, tag_line, headers)
+
 
             # PUUID로 최근 매치 가져오기
-            recent_matches = get_recent_matches(puuid, count=5)
+            recent_matches = get_recent_matches(puuid, headers, count=10)
             results = []
             for recent_match in recent_matches:
-                match, timeline = match_timeline_info(recent_match)
+                match, timeline = match_timeline_info(recent_match, headers)
                 isTarget = check_target(match, game_name)
                 if isTarget['isMid'] and isTarget['isOver20m']:
                     # print(f"Gamer: {gamer_name}#{tag_line}, matchId: {recent_match}, isMid: {isTarget['isMid']}, isOver20m: {isTarget['isOver20m']}")
@@ -367,8 +372,9 @@ def index():
                     opponent_data = get_gamer_data(match, timeline, isTarget['oteamid'])
                     merged_data = merge_data(gamer_data, opponent_data)
                     scores = compute_score(merged_data)
+                    scores['matchId'] = recent_match
                     results.append(scores)
-            return render_template("result.html", game_name=game_name, tag_line=tag_line, results=results)
+            return render_template("result.html", game_name=game_name, tag_line=tag_line, results=results, average_score=average_score)
         except Exception as e:
             return render_template("index.html", error=str(e))
     return render_template("index.html")
