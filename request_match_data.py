@@ -381,4 +381,7 @@ def index():
 
 # Flask 앱 실행
 if __name__ == "__main__":
-    app.run(debug=True)
+    import os
+    # Render에서 제공하는 포트 환경 변수 사용
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
