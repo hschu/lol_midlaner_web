@@ -9,7 +9,7 @@
 로컬에서 실행할 시에는 requirements.txt에 담겨있는 패키지를 설치하시고 아래와 같이 python 코드를 실행하면 됩니다.
 
 ```
-> python request_match_data.py
+python request_match_data.py
 ```
 
 최초 접속 페이지에서 요구하는 Riot API Key는 직접 Riot Developer에서 발급받으시면 됩니다.
