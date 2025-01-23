@@ -6,12 +6,6 @@ import numpy as np
 # Flask 앱 생성
 app = Flask(__name__)
 
-# Riot API 키 입력
-# API_KEY = "RGAPI-386cd3ac-a127-4203-aadc-678f4c384306"
-
-# Riot API 헤더
-# HEADERS = {"X-Riot-Token": API_KEY}
-
 parameter = pd.read_json("./parameters.json")
 
 normalize_parameter = {
